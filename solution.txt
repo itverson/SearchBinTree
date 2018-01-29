@@ -1,0 +1,207 @@
+1.首先给出搜索树结点的定义
+[cpp] view plain copy
+template<class K,class V>  
+struct BSTNode//树的结点  
+{  
+    BSTNode<K, V> *_pLeft;  
+    BSTNode<K, V>  *_pRight;  
+    K _data;  
+    V _value;  
+    BSTNode(const K &data, const V &value)  
+        :_data(data)  
+        , _value(value)  
+        , _pLeft(NULL)  
+        , _pRight(NULL)  
+    {}  
+};  
+其次给出封装结点的框架
+[cpp] view plain copy
+template<class K,class V>  
+class BSTree  
+{  
+    typedef BSTNode<K, V> Node;  
+    typedef Node* _PNode;  
+private:  
+    _PNode _pRoot;  
+public:  
+    BSTree()  
+        :_pRoot(NULL){}  
+  ///实现各个功能的地方  
+   //1.插入  
+    //2.删除  
+    //3.返回是最大值  
+    //4返回最小值  
+};  
+一.插入操作
+算法思路：1.首先如果没有一个结点的话则创建根节点
+                    2.根节点存在的话则需要去找当前要插入的位置
+                    3.用while循环去找，如果大于当前结点的值就在右边，如果小于当前结点的值就在左边（注意在这里如果数值在树种已经存在的话则不插入）
+                    4.和当前结点比较看插入在当前结点的左边还是右边然后将其插入就可以了。
+下面给出实现 算法的代码
+[cpp] view plain copy
+bool Insert(const K& data, const V& value)  
+{  
+    if (_pRoot == NULL)  
+    {  
+        _pRoot = new Node(data, value);//根节点  
+        return true;  
+    }  
+    _PNode cur = _pRoot;  
+    _PNode pParent = NULL;  
+    while (cur)  
+    {  
+        if (cur->_data == data)  
+            return false;  
+        else if (cur->_data > data)  
+        {  
+            pParent = cur;  
+            cur = cur->_pLeft;  
+        }  
+        else  
+        {  
+            pParent = cur;  
+            cur = cur->_pRight;  
+        }  
+    }  
+    _PNode pNewNode = new Node(data, value);  
+    if (data<pParent->_data)  
+        pParent->_pLeft = pNewNode;  
+    else  
+        pParent->_pRight = pNewNode;  
+    return true;  
+}  
+二.删除操作
+删除操作主要分四种，对于要删除的结点来说
+1.只有左子树，没有右子树
+2.只有右子树，没有左子树
+3.左右子树都没有
+4.左右子树都有
+其实仔细一想上面四种种情况可以合并为三种情况，即将左右子树都没有可以和只有左子树没有右子树或者只有右子树没有左子树合为一类。因为不管和哪个合为一类最后删除以后都把null赋值给父结点
+所以就只剩三种情况
+1.只有左子树，没有右子树
+2.只有右子树，没有左子树
+3.左右子树都有
+下面对于这三种情况的每种情况再展开讨论
+第一种：只有左子树没有右子树有两种情况
+①删除的结点为根节点
+②因为当前结点只有左子树，所以如果删除了他只需要考虑把他的左子树接给要删除的结点的左子树还是右子树，所以只需要判断当前结点是父节点的左子树还是右子树，然后将当前结点的左子树和其父结点连接
+第二种：只有右子树没有左子树和第一种情况一样。
+第三种：左右子树都有
+首先要找到当前结点右子树中的最小的结点，然后交换它和要删除结点的值，然后删除这个最小的 结点就可以了，这样的话就可以把问题转换为第二种情况了，因为右子树中最小的结点一定是没有左子树的，所以只需要判断最小结点是其父结点的左子树还是右子树，然后将最小结点的右子树和其父结点连接就可以了
+代码如下：
+[cpp] view plain copy
+bool Delete(const K& data)  
+    {  
+        if (_pRoot == NULL)  
+            return false;  
+        _PNode cur = _pRoot;  
+        _PNode pParent = NULL;  
+        //首先找到删除的那个结点的位置  
+        while (cur)  
+        {  
+            if (cur->_data == data)  
+                break;  
+            else if (cur->_data > data)  
+            {  
+                pParent = cur;  
+                cur = cur->_pLeft;  
+            }  
+            else  
+            {  
+                pParent = cur;  
+                cur = cur->_pRight;  
+            }  
+        }  
+        if (cur)  
+        {  
+            //找到这个结点以后开始判断下面三种情况  
+            //1.只有右子树没有左子树  
+            if (cur->_pLeft == NULL)  
+            {  
+                //如果当前结点是根结点的话  
+                if (cur == _pRoot)  
+                    _pRoot = _pRoot->_pRight;  
+                //当前结点是父结点的左子树还是右子树  
+                else  
+                {  
+                    if (cur == pParent->_pLeft)  
+                        pParent->_pLeft = cur->_pRight;  
+                    else  
+                    pParent->_pRight = cur->_pRight;  
+                }  
+            }  
+            else if (cur->_pRight == NULL)//只有左子树没有右子树  
+            {  
+                if (cur == _pRoot)  
+                {  
+                    _pRoot = _pRoot->_pLeft;  
+                }  
+                else  
+                {  
+                    if (pParent->_pLeft == cur)  
+                        pParent->_pLeft = cur->_pLeft;  
+                    else  
+                        pParent->_pRight = cur->_pLeft;  
+                }  
+            }  
+            else//左右子树都有的情况下  
+            {  
+                //首先找到右子树中最小的  
+                _PNode Min = cur->_pRight;  
+                _PNode _pParent = cur;  
+                while (Min->_pLeft)  
+                {  
+                    _pParent = Min;  
+                    Min = Min->_pLeft;  
+                }//找到了最小的然后和要删除的值交换  
+                cur->_data = Min->_data;  
+                cur->_value = Min->_value;  
+                if (_pParent->_pLeft == Min)  
+                {  
+                    _pParent->_pLeft = Min->_pRight;  
+                }  
+                else  
+                {  
+                    _pParent->_pRight = Min->_pRight;  
+                }  
+                delete[] Min;  
+                return true;  
+            }  
+        }  
+        delete[] cur;  
+        return true;  
+    }  
+三.返回最大和最小值
+这个不需要多说最左边的结点一定是最小的，最右边的结点一定是最大的。
+代码如下：
+[cpp] view plain copy
+K Mindata()  
+{  
+    _PNode cur = _pRoot;  
+    while (cur->_pLeft)  
+        cur = cur->_pLeft;  
+    return cur->_data;  
+}  
+K Maxdata()  
+{  
+    _PNode cur = _pRoot;  
+    while (cur->_pRight)  
+        cur = cur->_pRight;  
+    return cur->_data;  
+}  
+四，中序遍历
+代码如下：
+[cpp] view plain copy
+void InOrder()  
+{  
+    _InOrder(_pRoot);  
+}  
+void _InOrder(_PNode pRoot)  
+{  
+    if (pRoot)  
+    {  
+        _InOrder(pRoot->_pLeft);  
+        cout << pRoot->_data << " ";  
+        _InOrder(pRoot->_pRight);  
+    }  
+}  
